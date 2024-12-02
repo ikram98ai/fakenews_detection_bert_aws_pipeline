@@ -1,14 +1,15 @@
-
+################################################################################################################################################
 ######################################################## Import required modules ###############################################################
-
+################################################################################################################################################
 import subprocess
 import sys
 subprocess.check_call([sys.executable, "-m", "pip", "install", "torch==2.3.0"])
 import torch
 subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers==4.46.3"])
 from transformers import RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig
-subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'matplotlib==3.2.1'])
-subprocess.check_call([sys.executable, '-m','pip', 'install','--upgrade', 'pandas>=1.0.0'])
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'matplotlib==3.5.1'])
+import matplotlib.pyplot as plt
+
 import pandas as pd
 import os
 import argparse
@@ -18,15 +19,14 @@ import glob
 import tarfile
 import itertools
 from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
 
-
+################################################################################################################################################
 ########################################################### Tools and variables ################################################################
+################################################################################################################################################
 
-
-MODEL_NAME = 'pytorch_model.bin'
+MODEL_NAME = 'model.pth'
 
 PRE_TRAINED_MODEL_NAME = 'roberta-base'
 
@@ -39,24 +39,24 @@ def list_arg(raw_value):
     """argparse type for a list of strings"""
     return str(raw_value).split(',')
 
-
+################################################################################################################################################
 ###################################################### SageMaker load model function ###########################################################
-  
+################################################################################################################################################  
 
 # You need to put in config.json from saved fine-tuned Hugging Face model in code/ 
 # Reference it in the inference container at /opt/ml/model/code
 def model_fn(model_dir):
     model_path = '{}/{}'.format(model_dir, MODEL_NAME) 
-    model_config_path = '{}/{}'.format(model_dir, 'config.json')
+    model_config_path = '{}/transformer/{}'.format(model_dir, 'config.json')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     config = RobertaConfig.from_json_file(model_config_path)
     model = RobertaForSequenceClassification.from_pretrained(model_path, config=config)
     model.to(device)
     return model
 
-
+################################################################################################################################################
 ####################################################### Encoding of the news ################################################################
-
+################################################################################################################################################
 
 def encode_review(news_text_body, max_seq_length):
     encode_plus_token = tokenizer.encode_plus(
@@ -74,9 +74,9 @@ def encode_review(news_text_body, max_seq_length):
 
     return input_ids, attention_mask
 
-
+################################################################################################################################################
 ######################################################## SageMaker predict function ############################################################
-
+################################################################################################################################################
 
 def predict_fn(input_data, model, max_seq_length):
     model.eval()
@@ -120,9 +120,9 @@ def predict_fn(input_data, model, max_seq_length):
 
     return predicted_classes_jsonlines
 
-
+################################################################################################################################################
 ###################################################### Parse input arguments ###################################################################
-
+################################################################################################################################################
 
 def parse_args():
     # Unlike SageMaker training jobs (which have `SM_HOSTS` and `SM_CURRENT_HOST` env vars), processing jobs to need to parse the resource config file directly
@@ -160,9 +160,9 @@ def parse_args():
     
     return parser.parse_args()
 
-
+################################################################################################################################################
 ####################################################### Processing function ####################################################################
-
+################################################################################################################################################
         
 def process(args):
     print('Current host: {}'.format(args.current_host))
@@ -175,8 +175,13 @@ def process(args):
     model_tar = tarfile.open(model_tar_path)
     model_tar.extractall(args.input_model)
     model_tar.close()                                
-    model_path = '{}/transformer/'.format(args.input_model)
-    model = model_fn(model_path)
+    model_path = '{}/transformer'.format(args.input_model)
+    print("MODEL_PATH::",model_path,"args.INPUT_MODEL::",args.input_model)
+    
+    model = model_fn(args.input_model)
+
+
+    
 
     def predict(text):
         input_data = json.dumps({'features': [text]}).encode('utf-8')
@@ -278,9 +283,9 @@ def process(args):
 
     print('Complete')
     
-
+################################################################################################################################################
 #################################################################### Main ######################################################################
-
+################################################################################################################################################
     
 if __name__ == "__main__":
     args = parse_args()
