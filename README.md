@@ -6,6 +6,7 @@
 
 A fully automated AWS SageMaker Pipeline that ingests a raw “fake news” dataset, cleans & balances it, trains a RoBERTa classifier, evaluates its performance, and—if it meets your quality gates—packages & registers the model for deployment after human approval.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ikram98ai/fakenews_detection_bert_aws_pipeline)
 ---
 
 
